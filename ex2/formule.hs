@@ -1,5 +1,7 @@
 import Data.Maybe 
 import Text.Read
+-- LOUIS pour mes fonctions
+import Data.List
 
 -- -- TECHNICAL 
 -- FINDINDEXED finds the corresponding closing parenthesis ')' to the first open one '('
@@ -25,6 +27,19 @@ extractMatchingIndex (stk, a:xs)
     | a>0 && null stk = ([], [a])
     | a<0 = extractMatchingIndex (a:stk, xs)
 
+{-  LOUIS
+    Remplace findParIndex (je crois; teste-le!).
+    Suppose que le string commence par '('.
+    Il fout p-e la merde a cause de Int vs Integer...
+    D'ailleurs je recommande de retourner Maybe Integer (le type de retour de
+    elemIndex) au lieu d'une liste contenant l'indice! (*)
+-}
+fpi = elemIndex 0 . scanl1 + . map val where
+    val :: Char -> Integer
+    val '(' =  1
+    val ')' = -1
+    val  _  =  0
+
 
 -- ISFLOAT checks if the String provided is a float
 isFloat :: String -> Bool
@@ -37,15 +52,31 @@ getFloatIndex xs = head [a-1 | (a, b) <- zip [1..] xmod, not(isFloat (take a xmo
     where 
         xmod = xs++"r"
 
+{-  LOUIS
+    Remplace getFloatIndex (je crois; teste tout ce que je fais en fait!).
+    Faudra que tu m'expliques pq -1.
+-}
+gfi = maybe (-1) length . find isFloat . reverse . inits 
+
+
 -- SPLITALONGINDEX splits a string along an index
 splitAlongIndex :: String -> [Integer] -> (String, String)
 splitAlongIndex xs [] = ([], xs)
 splitAlongIndex xs indx = splitAt (fromInteger(head indx)) xs
 
+{-  LOUIS
+    (*)
+    Du coup si tu remplaces findParIndex par fpi, tu peux remplacer
+    splitAlongIndex par sai:
+-}
+sai :: Maybe Int -> String -> (String, String)
+sai i = splitAt (maybe 0 id i)
+
 -- DELETESPACES provided a string xs returns it without spaces
 deleteSpaces :: String -> String 
-deleteSpaces [] = []
+deleteSpaces [] = []    -- LOUIS: c /= ' '    :)
 deleteSpaces xs = [c | c <-xs, not(c==' ')]
+
 
 -- -- FUNCTIONAL DEPENDENCIES 
 -- E : axiome ( E -> TD )
