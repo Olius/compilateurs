@@ -113,7 +113,7 @@ funcF (dico, xs)
     | and[head xs=='(', null xE] = error "missing parenthesis"
     -- case 2 : we have a number 
     | (float_idx > 0) = (read_float, drop float_idx xs)
-    | otherwise = error "Unable to parse non-float numbers."
+    | otherwise = error "Unable to parse."
     where 
         -- split xs as (xE)xrest (NOTE : xrest contains the right bracket and xE contains the left one)
         (xE, xrest) = splitAlongIndex (findParIndex xs) xs
