@@ -46,9 +46,42 @@ funcPROG xs = e
         xsCut = splitOn ";" xs
         (_, dico) = funcLISTVAR (init xsCut, [])
         (e, _) = funcFORM (dico, last xsCut) 
-        
-        
 
+-- LOUIS: Je suggere:
+fPROG xs = funcFORM (dico, form) where
+    [listvar, form] = splitOn ";" xs
+    dico = map funcDECLVAR listvar
+
+-- Aussi, d'hab en Haskell pour passer deux arguments tu fais:
+-- funcFORM :: [(String, Integer)] -> String -> (Float, String)
+-- funcFORM _    [] = error ...
+-- funcFORM dico xs ...
+-- etc.
+--
+-- Autre commentaire: je pense que tu peux definir toutes les fonctions
+-- funcE funcT funcD etc dans un gros "where" sous funcFORM, ou t'utilises
+-- le dico sans devoir le passer en argument a chaque fois.
+-- (Ah et pour pas me faire chier tt le temps je definis un type dico.)
+-- (Ah et pq tes dicos contiennent que des entiers?)
+-- Exemple:
+
+{-
+type Dico = [(String, Float)]   -- Float pas Integer nan?
+
+fFORM :: Dico -> String -> (Float, String)
+fFORM dico = fE where
+    fE str
+        | null xd = (t + d, xd)
+        | otherwise = error "Could not parse at E"
+        where
+            (t, xt) = fT xs
+            (d, xd) = fD xt
+    -- etc...
+    -- fF = ...
+    -- et la ou tu traites "case 3: we have a variable"
+    -- t'utilises dico comme d'hab; t'y as acces puisque t'es dans le scope
+    -- de fFORM dico = blablabla!
+-}
 
 -- LISTVAR ( LISTVAR -> DECLVAR LISTVAR | e )
 funcLISTVAR :: ([String], [(String, Integer)])-> ([String], [(String, Integer)])
