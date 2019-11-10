@@ -3,7 +3,7 @@
         (scheme char)
         (scheme write))
 
-(define (car-cdr pair)
+(define (car+cdr pair)
   (values (car pair) (cdr pair)))
 
 (define (list->values list)
@@ -12,11 +12,11 @@
 (define (flatten list)
   (apply append list))
 
-(define (o . procs)
+#;(define (o . procs)
   (if-pop procs -> g
           (let ((f (o procs)))
             (lambda (x) (g (f x))))
-          (lambda (x) x)))
+          values))
 
 (define-syntax if-pop
   (syntax-rules (-> :)
@@ -25,7 +25,7 @@
     ((_ list -> head : tail consequent alternate)
      (if (null? list)
          alternate
-         (let-values (((head tail) (car-cdr list)))
+         (let-values (((head tail) (car+cdr list)))
            consequent)))))
 
 (define-syntax let-list
@@ -50,7 +50,7 @@
     ((_ ((var val) ...) expr ...)
      (let ((var (list #f)) ...)
        (set-car! var val) ...
-       (let-values (((car cdr) (car-cdr (car var))))
+       (let-values (((car cdr) (car+cdr (car var))))
          (set-car! var car)
          (set-cdr! var cdr))
        ...
@@ -79,22 +79,28 @@
     (if (equal? x s)
         (list x)
         '())))
-                    ; symbol ; form                                      ; process
-(define s (let-lazy ((T+ `(( (,T* ,L+)                            ,(lambda (x y) (+ x y)))))
-                     
-                     (T* `(( (,Tn ,L*)                            ,(lambda (x y) (* x y)))))
-                     
-                     (Tn `(( (,(gen-term "(") ,T+ ,(gen-term ")")),(lambda (x y z) y))
-                           ( (,(lambda (x)
-                                 (cond ((string->number x) => list)
-                                       (else '()))))              ,(lambda (x) x))))
-                     
-                     (L+ `(( (,(gen-term "+") ,T+)                ,(lambda (x y) y))
-                           ( ()                                   ,(lambda () 0))))
-                     
-                     (L* `(( (,(gen-term "*") ,T*)                ,(lambda (x y) y))
-                           ( ()                                   ,(lambda () 1)))))
-                    T+))
+
+(define s
+  (let-lazy
+
+  ; symbol   ; form                                      ; process
+
+    ((T+ `(( (,T* ,L+)                             ,(lambda (x y) (+ x y)))))
+
+     (T* `(( (,Tn ,L*)                             ,(lambda (x y) (* x y)))))
+
+     (Tn `(( (,(gen-term "(") ,T+ ,(gen-term ")")) ,(lambda (x y z) y))
+           ( (,(lambda (x)
+                 (cond ((string->number x) => list)
+                       (else '()))))               ,(lambda (x) x))))
+
+     (L+ `(( (,(gen-term "+") ,T+)                 ,(lambda (x y) y))
+           ( ()                                    ,(lambda () 0))))
+
+     (L* `(( (,(gen-term "*") ,T*)                 ,(lambda (x y) y))
+           ( ()                                    ,(lambda () 1)))))
+
+    T+))
 
 #;(define t `((() ,(lambda () #f))
             ((,(lambda (s) '(#t))) ,(lambda (x) x))))
@@ -105,7 +111,7 @@
   (case-lambda
     ((str) (split str char-whitespace?))
     ((str sep?) (let split ((start 0)
-                           (end 0))
+                            (end   0))
                  (let ((len (string-length str)))
                    (if (>= start len)
                        '()
