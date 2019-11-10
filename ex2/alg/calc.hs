@@ -4,8 +4,7 @@ module Calc where
     import Text.Read
     import Alg
 
-    p :: Symbol
-    p = e where
+    calc = e where
 
         e = NonTerm [
             ( [t,d] , sum )]

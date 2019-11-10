@@ -1,8 +1,8 @@
-module Alg where
+module AlgTypes where
 
-    data Symbol r tok = Term (tok -> [r])
-                      | NonTerm [Form r tok]
-    type Form   r tok = ([Symbol r tok], [r] -> r)
+    data (Foldable t, ) => Symbol t tok res = Term (tok -> [res])
+                        | NonTerm t
+    type Form arg res = (arg, arg -> res)
 
     alg :: Symbol r tok -> [tok] -> [(r, [tok])]
     alg (Term proc) [] = []

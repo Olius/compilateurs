@@ -2,9 +2,9 @@ module Main where
     
     import Data.Maybe
     import Alg
-    import Calc
+    import CalcVar
 
-    calc str = [ n | (n, []) <- alg p $ words str ]
+    calc str = [ n | (Val n, []) <- alg calcVar $ words str ]
 
     main = do
         line <- getLine
