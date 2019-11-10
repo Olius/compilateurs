@@ -2,4 +2,4 @@
 
 (import (scheme base))
 
-(include "alg.sps")
+(include "main.sps")
