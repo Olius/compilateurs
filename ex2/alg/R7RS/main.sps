@@ -1,16 +1,11 @@
 (import (scheme base)
         (scheme write)
         (alg)
-        (utils))
-
-(define (gen-term s)
-  (lambda (x)
-    (if (equal? x s)
-        (list x)
-        '())))
+        (utils)
+        (rules))
 
 (define s
-  (let-lazy
+  #;(let-lazy
 
   ; symbol   ; form                                      ; process
 
@@ -29,7 +24,18 @@
      (L* `(( (,(gen-term "*") ,T*)                 ,(lambda (x y) y))
            ( ()                                    ,(lambda () 1)))))
 
-    T+))
+    T+)
+    
+  (let ((nb (term string->number)))
+    (rules E
+      (E (((T t) (D d)      ) (+ t d)))
+      (D (( "+"  (E e)      ) e)
+         ((                 ) 0))
+      (T (((F f) (G g)      ) (* f g)))
+      (G (( "*"  (T t)      ) t)
+         ((                 ) 1))
+      (F (( "("  (E e)  ")" ) e)
+         (((nb n)           ) n)))))
 
 #;(define t `((() ,(lambda () #f))
             ((,(lambda (s) '(#t))) ,(lambda (x) x))))
@@ -40,9 +46,11 @@
   (cond ((assq '() (alg s (split str))) => cadr)
         (else "syntax error")))
 
-(let loop ()
+(define (main)
   (let ((line (read-line)))
     (unless (eof-object? line)
       (display (calc line))
       (newline)
-      (loop))))
+      (main))))
+
+(main)
