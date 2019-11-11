@@ -4,28 +4,9 @@
         (utils)
         (rules))
 
-(define s
-  #;(let-lazy
+; 5 + ( ( 4 + 7 ) * 3 + 8 ) * ( 5 + 4 )
 
-  ; symbol   ; form                                      ; process
-
-    ((T+ `(( (,T* ,L+)                             ,(lambda (x y) (+ x y)))))
-
-     (T* `(( (,Tn ,L*)                             ,(lambda (x y) (* x y)))))
-
-     (Tn `(( (,(gen-term "(") ,T+ ,(gen-term ")")) ,(lambda (x y z) y))
-           ( (,(lambda (x)
-                 (cond ((string->number x) => list)
-                       (else '()))))               ,(lambda (x) x))))
-
-     (L+ `(( (,(gen-term "+") ,T+)                 ,(lambda (x y) y))
-           ( ()                                    ,(lambda () 0))))
-
-     (L* `(( (,(gen-term "*") ,T*)                 ,(lambda (x y) y))
-           ( ()                                    ,(lambda () 1)))))
-
-    T+)
-    
+(define c
   (let ((nb (term string->number)))
     (rules E
       (E (((T t) (D d)      ) (+ t d)))
@@ -37,13 +18,29 @@
       (F (( "("  (E e)  ")" ) e)
          (((nb n)           ) n)))))
 
-#;(define t `((() ,(lambda () #f))
-            ((,(lambda (s) '(#t))) ,(lambda (x) x))))
+#;(define cv
+  (let ((nb (term string->number))
+        (id (term string->symbol)))
+    (rules PROG
 
-;5 + ( ( 4 + 7 ) * 3 + 8 ) * ( 5 + 4 )
+      (PROG    (((LISTVAR l) (FORM    f)) (evl l f) ))
+      (LISTVAR (((DECLVAR d) (LISTVAR l)) (add d l) )
+               ((                       ) empty-dict))
+      (DECLVAR (( "#" (id i) "=" (nb n) ) `(,i . ,n)))
+      (FORM    (((E e)                  ) e))
+
+      (E (((T t) (D d)      ) `(E ,t ,d)))
+      (D (( "+"  (E e)      ) `(D ,e)   )
+         ((                 ) `(D   )   )
+      (T (((F f) (G g)      ) (* f g)))
+      (G (( "*"  (T t)      ) t)
+         ((                 ) 1))
+      (F (( "("  (E e)  ")" ) e)
+         (((nb n)           ) n)
+         (((id i)           ) i))))))
 
 (define (calc str)
-  (cond ((assq '() (alg s (split str))) => cadr)
+  (cond ((assq '() (alg c (split str))) => cadr)
         (else "syntax error")))
 
 (define (main)
