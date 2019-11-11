@@ -3,16 +3,14 @@ import Control.Monad
 import Data.Maybe
 import Data.Traversable
 
+import AST
+
 data Token = NbT Float | AddT | MulT | LpT | RpT deriving Show
 
-data Symbol      = Term Terminal | NonT NonTerminal deriving Show
 data NonTerminal = E | D | T | G | F        deriving Show
-data Terminal    = Nb | Lp | Rp | Add | Mul deriving Show
+data Terminal    = Nb | Lp | Rp | Add | Mul deriving (Eq, Show)
 
-data Tree l n = Leaf l | Node n [Tree l n] deriving Show
-
-
-calc :: NonTerminal -> [[Symbol]]
+calc :: NonTerminal -> [[Symbol Terminal NonTerminal]]
 calc E = [[NonT T, NonT D]]
 calc D = [[], [Term Add, NonT E]]
 calc T = [[NonT F, NonT G]]
@@ -33,11 +31,11 @@ eval (Node F [n])     = eval n
 trees :: [Tree Terminal NonTerminal]
 trees = treeFrom $ NonT E
 
-treeFrom :: Symbol -> [Tree Terminal NonTerminal]
+treeFrom :: Symbol Terminal NonTerminal -> [Tree Terminal NonTerminal]
 treeFrom (Term t) = [Leaf t]
 treeFrom (NonT s) = concatMap (map (Node s) . sequence . map treeFrom) . calc $ s
 
-treeFromDepth :: Integral a => Symbol -> a -> [Tree Terminal NonTerminal]
+treeFromDepth :: Integral a => Symbol Terminal NonTerminal -> a -> [Tree Terminal NonTerminal]
 treeFromDepth (Term t) _ = [Leaf t]
 treeFromDepth (NonT s) 0 = []
 treeFromDepth (NonT s) n = [ Node s ts | ss <- calc s, ts <- sequence [ treeFromDepth s' (n-1) | s' <- ss ] ]
@@ -62,6 +60,13 @@ match (MulT  : ks) (Leaf Mul)  = (ks, Just $ Leaf   MulT )
 match ks (Node s ts) = (ks', Node s <$> sequence ts') where
     (ks', ts') = mapAccumL (match) ks ts
 match ks _ = (ks, Nothing)
+
+convert :: Token -> Terminal
+convert (NbT _) = Nb
+convert LpT     = Lp
+convert RpT     = Rp
+convert AddT    = Add
+convert MulT    = Mul
 
 allTrees :: [Tree Terminal NonTerminal] -> [Token] -> [Tree Token NonTerminal]
 allTrees trees ks = [ t' | t <- trees, ([], Just t') <- [match ks t] ]
