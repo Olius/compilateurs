@@ -2,6 +2,8 @@ import Data.Maybe
 import Text.Read
 import Data.List
 import Data.List.Split
+import qualified Data.Map as Map
+import Data.Char
 
 -- -- TECHNICAL 
 -- FINDINDEXED finds the corresponding closing parenthesis ')' to the first open one '('
@@ -9,9 +11,9 @@ import Data.List.Split
 -- scanl = cumsum 
 -- elemIndex index du 0
 -- TODO !! gérer le cas du nothing
+-- findParIndex returns the index of the first unmatched closing parenthesis
 findParIndex :: [Char] -> Maybe Int
-findParIndex = elemIndex 0 . scanl1 (+) . map val where
-    val :: Char -> Integer
+findParIndex = findIndex (< 0) . scanl1 (+) . map val where
     val '(' =  1
     val ')' = -1
     val  _  =  0
@@ -34,23 +36,26 @@ splitAlongIndex i = splitAt (maybe 0 id i)
 -- DELETESPACES provided a string xs returns it without spaces
 deleteSpaces :: String -> String 
 deleteSpaces [] = [] 
-deleteSpaces xs = [c | c <-xs, c/=' ']
+deleteSpaces xs = [ c | c <- xs, c /= ' ' ]
 
+
+
+
+
+type Dico = Map.Map String Float
 
 -- -- FUNCTIONAL DEPENDENCIES 
 -- PROG : axiome ( PROG -> LISTVAR FORM )
 
-funcPROG :: String -> Float 
-funcPROG xs = e
-    where 
-        xsCut = splitOn ";" xs
-        (_, dico) = funcLISTVAR (init xsCut, [])
-        (e, _) = funcFORM (dico, last xsCut) 
-
--- LOUIS: Je suggere:
-fPROG xs = funcFORM (dico, form) where
-    [listvar, form] = splitOn ";" xs
-    dico = map funcDECLVAR listvar
+funcPROG :: String -> Float
+funcPROG xs = result where
+    (result, []) = funcFORM dico form
+    parts = splitOn ";" xs
+    listvar = init parts
+    form = last parts
+    dico = foldr insertVar Map.empty listvar
+    insertVar str dico = Map.insert id nb dico where
+        (id, nb) = funcDECLVAR str
 
 -- Aussi, d'hab en Haskell pour passer deux arguments tu fais:
 -- funcFORM :: [(String, Integer)] -> String -> (Float, String)
@@ -83,6 +88,7 @@ fFORM dico = fE where
     -- de fFORM dico = blablabla!
 -}
 
+{- Plus besoin de ça.
 -- LISTVAR ( LISTVAR -> DECLVAR LISTVAR | e )
 funcLISTVAR :: ([String], [(String, Integer)])-> ([String], [(String, Integer)])
 funcLISTVAR ([], dico) = ([], dico)
@@ -90,54 +96,83 @@ funcLISTVAR (xs, dico) = funcLISTVAR (xr, (newId, newNb):dico)
     where 
         xr = tail xs 
         (newId, newNb) = funcDECLVAR (head xs)
-
+-}
 
 -- DECLVAR ( DECLVAR -> id = nb; )
-funcDECLVAR :: String -> (String, Integer)
+funcDECLVAR :: String -> (String, Float)
 funcDECLVAR xs = (id, nb)
-    where -- TODO !!! -- test : funcLISTVAR (["a=3", "b=5", "abs= -3"], [])
-        li = splitOn "=" xs
-        id = "someid"
-        nb = 1
+    where -- test : funcLISTVAR (["a=3", "b=5", "abs= -3"], [])
+        [var, val] = splitOn "=" xs
+        id = deleteSpaces var
+        nb = maybe (error "Invalid number in declaration") Prelude.id $ readMaybe val
 
 -- FORM ( FORM -> E )
-funcFORM = funcE
+funcFORM :: Dico -> String -> (Float, String)
+funcFORM dico = funcE where
 
--- E ( E -> TD )
-funcE :: ([(String, Integer)], String) -> (Float, String)
-funcE (_, []) = error "Oops. Something wrong happened."
-funcE (dico, xs)
-    | null xd = (t + d, xd)
-    -- there should be nothing left to parse
-    | otherwise = error "could not parse"
-    where 
-        (t, xt) = funcT (dico, xs)
-        (d, xd) = funcD (dico, xt)
+    -- E ( E -> TD )
+    funcE [] = error "Oops. Something wrong happened."
+    funcE xs
+        | null xd = (t + d, xd)
+        -- there should be nothing left to parse
+        | otherwise = error "could not parse"
+        where 
+            (t, xt) = funcT xs
+            (d, xd) = funcD xt
 
--- D ( D -> +E | e )
-funcD :: ([(String, Integer)], String) -> (Float, String)
-funcD (_, []) = (0, [])
-funcD (dico, xs)
-    | (head xs == '+') = funcE (dico, tail xs) -- call funcE on xs without the first element (+) 
-    | otherwise = (0, xs) -- epsilon 
+    -- D ( D -> +E | e )
+    funcD []       = (0, [])
+    funcD ('+':xs) = funcE xs     -- call funcE on xs without the first element (+)
+    funcD xs       = (0, xs)     -- epsilon
 
--- T ( T -> FG )
-funcT :: ([(String, Integer)], String) -> (Float, String)
-funcT (_, []) = error "Oops. Something wrong happened."
-funcT (dico, xs) = (f * g, xg)
-    where 
-        (f, xf) = funcF (dico, xs)
-        (g, xg) = funcG (dico, xf)
+    -- T ( T -> FG )
+    funcT [] = error "Oops. Something wrong happened."
+    funcT xs = (f * g, xg)
+        where 
+            (f, xf) = funcF xs
+            (g, xg) = funcG xf
 
--- G ( G -> *T | e )
-funcG :: ([(String, Integer)], String) -> (Float, String)
-funcG (_, []) = (1, [])
-funcG (dico, xs) 
-    | (head xs == '*') = funcT (dico, tail xs)
-    | otherwise = (1, xs) -- epsilon 
+    -- G ( G -> *T | e )
+    funcG []       = (1, [])
+    funcG ('*':xs) = funcT xs
+    funcG xs       = (1, xs)      -- epsilon
+        
+    -- F ( F -> (E) | nb | id )
+    funcF [] = error "Oops. Something wrong happened."
 
--- F ( F -> (E) | nb | id )
--- réécrire !! 
+    -- case 1 : we have a bracketed expression
+    funcF ('(':xs) =
+        if null xE
+        then error "missing parenthesis"
+        else (resultE, xrest)
+        where
+            (xE, _:xrest) = splitAlongIndex (findParIndex xs) xs
+            (resultE, []) = funcE xE
+
+    funcF xs
+        -- case 2 : we have a number 
+        | float_idx > 0 =
+            let
+                read_float = read (take float_idx xs)
+            in
+                (read_float, drop float_idx xs)
+        -- case 3 : we have a variable
+        | otherwise =
+            let
+                (id, xs') = span isAlphaNum xs
+            in
+                (dico Map.! id, xs')
+        where
+            float_idx = getFloatIndex xs
+
+
+    
+
+
+
+{-
+-- réécrire !!
+-- C'est fait :)
 funcF :: ([(String, Integer)], String) -> (Float, String)
 funcF (_, []) = error "Oops. Something wrong happened."
 funcF (dico, xs) 
@@ -156,9 +191,9 @@ funcF (dico, xs)
         float_idx = getFloatIndex xs
         -- read the string makes as float as a float 
         read_float = read (take float_idx xs) :: Float
+-}
 
-
--- -- PARSING
+-- PARSING
 main::IO()
 main = do putStrLn "Please enter a program to parse"
           prog <- getLine 

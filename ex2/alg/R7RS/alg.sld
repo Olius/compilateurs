@@ -1,0 +1,5 @@
+(define-library (alg)
+  (export alg)
+  (import (scheme base)
+          (utils))
+  (include "alg.scm"))
