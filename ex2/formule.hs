@@ -57,47 +57,6 @@ funcPROG xs = result where
     insertVar str dico = Map.insert id nb dico where
         (id, nb) = funcDECLVAR str
 
--- Aussi, d'hab en Haskell pour passer deux arguments tu fais:
--- funcFORM :: [(String, Integer)] -> String -> (Float, String)
--- funcFORM _    [] = error ...
--- funcFORM dico xs ...
--- etc.
---
--- Autre commentaire: je pense que tu peux definir toutes les fonctions
--- funcE funcT funcD etc dans un gros "where" sous funcFORM, ou t'utilises
--- le dico sans devoir le passer en argument a chaque fois.
--- (Ah et pour pas me faire chier tt le temps je definis un type dico.)
--- (Ah et pq tes dicos contiennent que des entiers?)
--- Exemple:
-
-{-
-type Dico = [(String, Float)]   -- Float pas Integer nan?
-
-fFORM :: Dico -> String -> (Float, String)
-fFORM dico = fE where
-    fE str
-        | null xd = (t + d, xd)
-        | otherwise = error "Could not parse at E"
-        where
-            (t, xt) = fT xs
-            (d, xd) = fD xt
-    -- etc...
-    -- fF = ...
-    -- et la ou tu traites "case 3: we have a variable"
-    -- t'utilises dico comme d'hab; t'y as acces puisque t'es dans le scope
-    -- de fFORM dico = blablabla!
--}
-
-{- Plus besoin de ça.
--- LISTVAR ( LISTVAR -> DECLVAR LISTVAR | e )
-funcLISTVAR :: ([String], [(String, Integer)])-> ([String], [(String, Integer)])
-funcLISTVAR ([], dico) = ([], dico)
-funcLISTVAR (xs, dico) = funcLISTVAR (xr, (newId, newNb):dico)
-    where 
-        xr = tail xs 
-        (newId, newNb) = funcDECLVAR (head xs)
--}
-
 -- DECLVAR ( DECLVAR -> id = nb; )
 funcDECLVAR :: String -> (String, Float)
 funcDECLVAR xs = (id, nb)
@@ -166,32 +125,6 @@ funcFORM dico = funcE where
             float_idx = getFloatIndex xs
 
 
-    
-
-
-
-{-
--- réécrire !!
--- C'est fait :)
-funcF :: ([(String, Integer)], String) -> (Float, String)
-funcF (_, []) = error "Oops. Something wrong happened."
-funcF (dico, xs) 
-    -- case 1 : we have a bracketed expression
-    | and[head xs=='(', not(null xE)] = (resultE, tail xrest)
-    | and[head xs=='(', null xE] = error "missing parenthesis"
-    -- case 2 : we have a number 
-    | (float_idx > 0) = (read_float, drop float_idx xs)
-    | otherwise = error "Unable to parse."
-    where 
-        -- split xs as (xE)xrest (NOTE : xrest contains the right bracket and xE contains the left one)
-        (xE, xrest) = splitAlongIndex (findParIndex xs) xs
-        -- call funcE on the strin xE 
-        (resultE, _) = funcE(dico, tail xE)
-        -- get the index where the expression is no longer a float 
-        float_idx = getFloatIndex xs
-        -- read the string makes as float as a float 
-        read_float = read (take float_idx xs) :: Float
--}
 
 -- PARSING
 main::IO()
