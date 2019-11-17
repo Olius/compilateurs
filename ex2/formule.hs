@@ -6,12 +6,7 @@ import qualified Data.Map as Map
 import Data.Char
 
 -- -- TECHNICAL 
--- FINDINDEXED finds the corresponding closing parenthesis ')' to the first open one '('
--- map val : mapper val sur un string 
--- scanl = cumsum 
--- elemIndex index du 0
--- TODO !! gérer le cas du nothing
--- findParIndex returns the index of the first unmatched closing parenthesis
+-- FINDINDEXED returns the index of the first unmatched closing parenthesis
 findParIndex :: [Char] -> Maybe Int
 findParIndex = findIndex (< 0) . scanl1 (+) . map val where
     val '(' =  1
