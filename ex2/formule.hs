@@ -55,7 +55,7 @@ funcPROG xs = result where
 -- DECLVAR ( DECLVAR -> id = nb; )
 funcDECLVAR :: String -> (String, Float)
 funcDECLVAR xs = (id, nb)
-    where -- test : funcLISTVAR (["a=3", "b=5", "abs= -3"], [])
+    where
         [var, val] = splitOn "=" xs
         id = deleteSpaces var
         nb = maybe (error "Invalid number in declaration") Prelude.id $ readMaybe val
@@ -95,29 +95,22 @@ funcFORM dico = funcE where
     funcF [] = error "Oops. Something wrong happened."
 
     -- case 1 : we have a bracketed expression
-    funcF ('(':xs) =
-        if null xE
-        then error "missing parenthesis"
-        else (resultE, xrest)
+    funcF ('(':xs) 
+        | null xE = error "missing parenthesis"
+        | otherwise = (resultE, xrest)
         where
             (xE, _:xrest) = splitAlongIndex (findParIndex xs) xs
             (resultE, []) = funcE xE
 
     funcF xs
         -- case 2 : we have a number 
-        | float_idx > 0 =
-            let
-                read_float = read (take float_idx xs)
-            in
-                (read_float, drop float_idx xs)
+        | float_idx > 0 = (read_float, drop float_idx xs)              
         -- case 3 : we have a variable
-        | otherwise =
-            let
-                (id, xs') = span isAlphaNum xs
-            in
-                (dico Map.! id, xs')
+        | otherwise = (dico Map.! id, xs')                
         where
+            read_float = read (take float_idx xs)
             float_idx = getFloatIndex xs
+            (id, xs') = span isAlphaNum xs
 
 
 
