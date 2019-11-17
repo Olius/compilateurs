@@ -2,6 +2,7 @@ import Data.Maybe
 import Text.Read
 import Data.List
 import Data.List.Split
+import Data.Char
 
 type Dico = [(String, Float)]
 
@@ -15,14 +16,13 @@ isFloat :: String -> Bool
 isFloat xs = isJust (readMaybe xs :: Maybe Float)
 
 -- ISVARNAME checks if the String provided is a variable name
+    -- NOTE : required ? 
 isVarName :: String -> Bool
 isVarName [] = error "A variable name should be provided."
-isVarName xs
-    | beginsWithChar && hasNoIllegalChar = True
-    | otherwise = False
+isVarName xs = beginsWithChar && hasNoIllegalChar
     where
-        hasNoIllegalChar = null ([x | x<-xs, not $ elem x (['a'..'z'] ++['A'..'Z'] ++ ['0'..'9'])])
-        beginsWithChar = elem (head xs) (['A'..'Z']++['a'..'z'])
+        hasNoIllegalChar = foldr (&&) True [isAlphaNum c | c<-xs]
+        beginsWithChar = isAlpha (head xs)
 
 -- GETINDEX returns the index where a boolean function f applied to the beggining of a string is no longer true
 getIndex :: (String->Bool) -> String -> Int 
@@ -81,16 +81,20 @@ funcListVar xs dict
         varNotExistAlready = null [a | (a, _) <- dict, a==newVar]
 
 
--- FUMCDECLVAR splits along the '='
+-- FUNCDECLVAR splits along the '=' (DECLVAR -> id = nb; )
 funcDeclVar :: String -> (String, Float)
 funcDeclVar [] = error "Misplaced ';' sign."
-funcDeclVar xs
+funcDeclVar xs = splitDeclVar [var, val]
+    where 
+        [var, val] = splitOn "=" xs
+        
+{-
     | (length parts == 2) = splitDeclVar parts
     | (length parts > 2)  = error "I do not understand expressions with multiple '=' signs."
     | otherwise = error "'=' sign missing."
     where 
         parts = splitOn "=" xs
-
+-}
 
 -- SPLITDECLVAR checks validity of RHS and LHS and returns them as a couple
 splitDeclVar :: [String] -> (String, Float)
@@ -133,9 +137,9 @@ funcT xs dict = (f * g, xg)
 -- G ( G -> *T | e )
 funcG :: String -> Dico -> (Float, String)
 funcG [] _ = (1, [])
-funcG xs dict 
-    | (head xs == '*') = funcT (tail xs) dict
-    | otherwise = (1, xs) -- epsilon 
+funcG ('*':xs) dico = funcT xs dico
+funcG xs dico      = (1, xs)  -- epsilon
+
 
 -- F ( F -> (E) | nb | id )
 -- réécrire !! 
@@ -172,3 +176,15 @@ main::IO()
 main = do putStrLn "Please enter a program to parse"
           prog <- getLine 
           print $ funcProg (deleteSpaces prog)
+
+{-
+data Pet = Cat | Dog | Fish | Parrot String
+
+hello :: Pet -> String
+hello x = 
+  case x of
+    Cat -> "meeow"
+    Dog -> "woof"
+    Fish -> "bubble"
+    Parrot name -> "pretty " ++ name
+-}
